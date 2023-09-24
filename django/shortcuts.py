@@ -85,7 +85,7 @@ def get_object_or_404(klass, *args, **kwargs):
         return queryset.get(*args, **kwargs)
     except queryset.model.DoesNotExist:
         raise Http404(
-            "No %s matches the given query." % queryset.model._meta.object_name
+            f"No {queryset.model._meta.object_name} matches the given query."
         )
 
 
@@ -120,15 +120,14 @@ def get_list_or_404(klass, *args, **kwargs):
             klass.__name__ if isinstance(klass, type) else klass.__class__.__name__
         )
         raise ValueError(
-            "First argument to get_list_or_404() must be a Model, Manager, or "
-            "QuerySet, not '%s'." % klass__name
+            f"First argument to get_list_or_404() must be a Model, Manager, or QuerySet, not '{klass__name}'."
         )
-    obj_list = list(queryset.filter(*args, **kwargs))
-    if not obj_list:
+    if obj_list := list(queryset.filter(*args, **kwargs)):
+        return obj_list
+    else:
         raise Http404(
-            "No %s matches the given query." % queryset.model._meta.object_name
+            f"No {queryset.model._meta.object_name} matches the given query."
         )
-    return obj_list
 
 
 async def aget_list_or_404(klass, *args, **kwargs):
@@ -142,10 +141,10 @@ async def aget_list_or_404(klass, *args, **kwargs):
             "First argument to aget_list_or_404() must be a Model, Manager, or "
             f"QuerySet, not '{klass__name}'."
         )
-    obj_list = [obj async for obj in queryset.filter(*args, **kwargs)]
-    if not obj_list:
+    if obj_list := [obj async for obj in queryset.filter(*args, **kwargs)]:
+        return obj_list
+    else:
         raise Http404(f"No {queryset.model._meta.object_name} matches the given query.")
-    return obj_list
 
 
 def resolve_url(to, *args, **kwargs):

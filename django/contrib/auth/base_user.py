@@ -29,7 +29,7 @@ class BaseUserManager(models.Manager):
         except ValueError:
             pass
         else:
-            email = email_name + "@" + domain_part.lower()
+            email = f"{email_name}@{domain_part.lower()}"
         return email
 
     def get_by_natural_key(self, username):

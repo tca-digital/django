@@ -50,14 +50,11 @@ class Sitemap:
 
     def _items(self):
         if self.i18n:
-            # Create (item, lang_code) tuples for all items and languages.
-            # This is necessary to paginate with all languages already considered.
-            items = [
+            return [
                 (item, lang_code)
                 for item in self.items()
                 for lang_code in self.get_languages_for_item(item)
             ]
-            return items
         return self.items()
 
     def _location(self, item, force_lang_code=None):
@@ -91,11 +88,11 @@ class Sitemap:
                     site = Site.objects.get_current()
                 except Site.DoesNotExist:
                     pass
-            if site is None:
-                raise ImproperlyConfigured(
-                    "To use sitemaps, either enable the sites framework or pass "
-                    "a Site/RequestSite object in your view."
-                )
+        if site is None:
+            raise ImproperlyConfigured(
+                "To use sitemaps, either enable the sites framework or pass "
+                "a Site/RequestSite object in your view."
+            )
         return site.domain
 
     def get_urls(self, page=1, site=None, protocol=None):
@@ -106,13 +103,12 @@ class Sitemap:
     def get_latest_lastmod(self):
         if not hasattr(self, "lastmod"):
             return None
-        if callable(self.lastmod):
-            try:
-                return max([self.lastmod(item) for item in self.items()], default=None)
-            except TypeError:
-                return None
-        else:
+        if not callable(self.lastmod):
             return self.lastmod
+        try:
+            return max((self.lastmod(item) for item in self.items()), default=None)
+        except TypeError:
+            return None
 
     def _urls(self, page, protocol, domain):
         urls = []
@@ -127,10 +123,10 @@ class Sitemap:
 
             if all_items_lastmod:
                 all_items_lastmod = lastmod is not None
-                if all_items_lastmod and (
-                    latest_lastmod is None or lastmod > latest_lastmod
-                ):
-                    latest_lastmod = lastmod
+            if all_items_lastmod and (
+                latest_lastmod is None or lastmod > latest_lastmod
+            ):
+                latest_lastmod = lastmod
 
             url_info = {
                 "item": item,
@@ -186,14 +182,12 @@ class GenericSitemap(Sitemap):
         return self.queryset.filter()
 
     def lastmod(self, item):
-        if self.date_field is not None:
-            return getattr(item, self.date_field)
-        return None
+        return getattr(item, self.date_field) if self.date_field is not None else None
 
     def get_latest_lastmod(self):
         if self.date_field is not None:
             return (
-                self.queryset.order_by("-" + self.date_field)
+                self.queryset.order_by(f"-{self.date_field}")
                 .values_list(self.date_field, flat=True)
                 .first()
             )

@@ -148,17 +148,12 @@ class ForeignKeyRawIdWidget(forms.TextInput):
         if self.admin_site.is_registered(rel_to):
             # The related object is registered with the same AdminSite
             related_url = reverse(
-                "admin:%s_%s_changelist"
-                % (
-                    rel_to._meta.app_label,
-                    rel_to._meta.model_name,
-                ),
+                f"admin:{rel_to._meta.app_label}_{rel_to._meta.model_name}_changelist",
                 current_app=self.admin_site.name,
             )
 
-            params = self.url_parameters()
-            if params:
-                related_url += "?" + urlencode(params)
+            if params := self.url_parameters():
+                related_url += f"?{urlencode(params)}"
             context["related_url"] = related_url
             context["link_title"] = _("Lookup")
             # The JavaScript code looks for this class.
@@ -198,12 +193,7 @@ class ForeignKeyRawIdWidget(forms.TextInput):
 
         try:
             url = reverse(
-                "%s:%s_%s_change"
-                % (
-                    self.admin_site.name,
-                    obj._meta.app_label,
-                    obj._meta.object_name.lower(),
-                ),
+                f"{self.admin_site.name}:{obj._meta.app_label}_{obj._meta.object_name.lower()}_change",
                 args=(obj.pk,),
             )
         except NoReverseMatch:
@@ -234,8 +224,7 @@ class ManyToManyRawIdWidget(ForeignKeyRawIdWidget):
         return "", ""
 
     def value_from_datadict(self, data, files, name):
-        value = data.get(name)
-        if value:
+        if value := data.get(name):
             return value.split(",")
 
     def format_value(self, value):
@@ -547,9 +536,12 @@ class AutocompleteMixin:
         )
         to_field_name = remote_model_opts.get_field(to_field_name).attname
         choices = (
-            (getattr(obj, to_field_name), self.choices.field.label_from_instance(obj))
+            (
+                getattr(obj, to_field_name),
+                self.choices.field.label_from_instance(obj),
+            )
             for obj in self.choices.queryset.using(self.db).filter(
-                **{"%s__in" % to_field_name: selected_choices}
+                **{f"{to_field_name}__in": selected_choices}
             )
         )
         for option_value, option_label in choices:
@@ -570,25 +562,27 @@ class AutocompleteMixin:
     def media(self):
         extra = "" if settings.DEBUG else ".min"
         i18n_file = (
-            ("admin/js/vendor/select2/i18n/%s.js" % self.i18n_name,)
+            (f"admin/js/vendor/select2/i18n/{self.i18n_name}.js",)
             if self.i18n_name
             else ()
         )
         return forms.Media(
             js=(
-                "admin/js/vendor/jquery/jquery%s.js" % extra,
-                "admin/js/vendor/select2/select2.full%s.js" % extra,
+                (
+                    f"admin/js/vendor/jquery/jquery{extra}.js",
+                    f"admin/js/vendor/select2/select2.full{extra}.js",
+                )
+                + i18n_file
             )
-            + i18n_file
             + (
                 "admin/js/jquery.init.js",
                 "admin/js/autocomplete.js",
             ),
             css={
                 "screen": (
-                    "admin/css/vendor/select2/select2%s.css" % extra,
+                    f"admin/css/vendor/select2/select2{extra}.css",
                     "admin/css/autocomplete.css",
-                ),
+                )
             },
         )
 
